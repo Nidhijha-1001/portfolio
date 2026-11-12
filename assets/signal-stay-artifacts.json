@@ -1,0 +1,14 @@
+{
+  "charts": [
+    {
+      "title": "Signal & Stay analytics overview",
+      "src": "signal-stay-overview.png",
+      "alt": "Saved Signal & Stay dashboard screenshot with customer churn analytics."
+    },
+    {
+      "title": "Signal & Stay model evaluation",
+      "src": "signal-stay-model-evidence.png",
+      "alt": "Saved Signal & Stay model evidence screenshot with holdout evaluation charts."
+    }
+  ]
+}

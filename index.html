@@ -6,15 +6,22 @@
     <title>Nidhi Jha | AI/ML Engineer</title>
     <meta
       name="description"
-      content="Nidhi Jha is an AI/ML undergraduate exploring intelligence, engineering possibilities, and building practical AI-powered applications."
+      content="Nidhi Jha is an AI/ML undergraduate building practical machine-learning systems and AI-powered applications."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+        }
+      }
+    </script>
   </head>
   <body>
     <div class="page-shell">
@@ -28,9 +35,8 @@
           <div class="nav-links">
             <a href="#about">About</a>
             <a href="#skills">Skills</a>
-            <a href="#lab">ML Lab</a>
             <a href="#projects">Projects</a>
-            <a href="#timeline">Timeline</a>
+            <a href="#timeline">Experience</a>
             <a href="#achievements">Achievements</a>
             <a href="#contact">Contact</a>
           </div>
@@ -74,7 +80,7 @@
           <div class="hero-copy">
             <div class="eyebrow">AI/ML Engineer • Applied AI Developer • Machine Learning Enthusiast</div>
             <h1>
-              Hi, I'm <span class="text-gradient">Nidhi Jha</span>
+              Hi, I'm<br /><span class="text-gradient">Nidhi Jha</span>
             </h1>
             <div class="typing-block">
               <span class="typing-label">Exploring</span>
@@ -109,12 +115,13 @@
             </div>
           </div>
 
-          <div class="hero-visual" aria-label="Neural network visual">
-            <div class="orb orb-1"></div>
-            <div class="orb orb-2"></div>
-            <canvas id="neural-canvas"></canvas>
-            <div class="hero-readout mono"><span>NEURAL SYSTEM</span><b><i></i> ONLINE</b><small>Nodes <strong>LIVE</strong></small><small>Connections <strong>DYNAMIC</strong></small><small>Environment <strong>INTERACTIVE</strong></small></div>
-            <span class="hero-coordinate mono">LATENT SPACE / 03D</span>
+          <div class="hero-visual" aria-label="Interactive three-dimensional machine-learning data universe with clustered classes, neural-network connections, and flowing data">
+            <canvas id="portfolio-canvas" aria-hidden="true"></canvas>
+            <div class="hero-readout mono"><span>ENGINEERING FOCUS</span><b><i></i> BUILDING</b><small>Focus <strong>APPLIED AI</strong></small><small>Projects <strong>IN PROGRESS</strong></small><small>Approach <strong>PRODUCT-MINDED</strong></small></div>
+            <div class="universe-legend mono" aria-hidden="true">
+            
+            </div>
+            <span class="hero-coordinate mono"></span>
             <div class="terminal-panel">
               <div class="terminal-header">
                 <span class="dot red"></span>
@@ -144,11 +151,11 @@ Learning. Experimenting. Building.</pre>
         <section id="about" class="story container reveal">
           <div class="section-heading">
             <span class="kicker">About</span>
-            <h2>Curiosity drives intelligence.</h2>
+            <h2>Building practical AI and software.</h2>
           </div>
 
           <div class="story-grid">
-            <div class="story-copy panel">
+            <div class="story-copy">
               <p>
                 I'm a third-year B.Tech student specializing in Artificial Intelligence and Machine Learning,
                 with a growing interest in applied machine learning, intelligent applications, and software
@@ -169,24 +176,28 @@ Learning. Experimenting. Building.</pre>
               </p>
             </div>
 
-            <div class="stats-panel panel">
+            <dl class="stats-panel about-highlights" aria-label="Academic and professional highlights">
               <div class="stat-card">
-                <span>9.4</span>
-                <label>CGPA</label>
+                <dt>9.4</dt>
+                <dd>CGPA</dd>
               </div>
               <div class="stat-card">
-                <span>300+</span>
-                <label>DSA Problems</label>
+                <dt>300+</dt>
+                <dd>DSA problems solved</dd>
               </div>
               <div class="stat-card">
-                <span>AI &amp; ML</span>
-                <label>Undergraduate</label>
+                <dt>B.Tech</dt>
+                <dd>Artificial Intelligence &amp; Machine Learning</dd>
               </div>
               <div class="stat-card">
-                <span>Open</span>
-                <label>Source Contributor</label>
+                <dt>Open-Source</dt>
+                <dd>Creating Impact Through Open Collaboration</dd>
               </div>
-            </div>
+              <div class="stat-card">
+                <dt>AI/ML + Full-stack</dt>
+                <dd>Projects built</dd>
+              </div>
+            </dl>
           </div>
         </section>
 
@@ -194,7 +205,7 @@ Learning. Experimenting. Building.</pre>
           <div class="container">
             <div class="section-heading">
               <span class="kicker">Selected Work</span>
-              <h2>Beyond Projects — Exploring Intelligence.</h2>
+              <h2>Selected engineering work.</h2>
             </div>
 
             <div class="project-grid">
@@ -203,7 +214,7 @@ Learning. Experimenting. Building.</pre>
                   <span class="tag">Machine Learning | Predictive Analytics | AI Applications</span>
                   <span class="project-number">01</span>
                 </div>
-                <div class="project-visual churn-visual"><div class="visual-top mono">RETENTION ANALYTICS <span>ILLUSTRATIVE PREVIEW</span></div><div class="risk-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="probability-empty mono">PREDICTION PROBABILITY <b>— / AWAITING MODEL</b></div><div class="visual-bottom"><span>SEGMENTS: LOW · MODERATE · HIGH</span><span>ILLUSTRATIVE DISTRIBUTION</span></div></div><h3>Signal &amp; Stay — Customer Churn Intelligence</h3>
+                <div class="project-visual signal-visual"><img src="assets/signal-stay-overview.png" alt="Signal &amp; Stay customer churn intelligence dashboard overview" loading="lazy" decoding="async" /><span class="project-image-label mono">PRODUCT OVERVIEW / SIGNAL &amp; STAY</span></div><h3>Signal &amp; Stay — Customer Churn Intelligence</h3>
                 <p>
                   An end-to-end customer churn intelligence workspace built around the IBM Telco Customer Churn dataset.
                   It combines a recall-oriented model benchmark, out-of-sample risk scores, an explainable prediction API,
@@ -223,6 +234,28 @@ Learning. Experimenting. Building.</pre>
                   <li>Explainable churn predictions</li>
                   <li>Retention cohort analysis</li>
                 </ul>
+                <details class="signal-details">
+                  <summary>Explore the project workflow</summary>
+                  <div class="signal-detail-body">
+                    <ol class="signal-workflow">
+                      <li><b>Dataset &amp; preprocessing</b><span>IBM Telco Customer Churn data; handle missing values, review field types, and prepare categorical inputs.</span></li>
+                      <li><b>Feature engineering</b><span>Customer and service attributes are shaped into model-ready features.</span></li>
+                      <li><b>Modeling</b><span>Logistic Regression, Random Forest, and XGBoost candidate models.</span></li>
+                      <li><b>Cross-validation</b><span>Compare candidate models across validation folds.</span></li>
+                      <li><b>Evaluation</b><span>Assess model behavior on held-out data; no metric values are shown without saved evaluation artifacts.</span></li>
+                      <li><b>Churn predictions</b><span>Produce customer risk predictions for retention review.</span></li>
+                    </ol>
+                    <div class="signal-explainability">
+                      <h4>Feature importance &amp; explainability</h4>
+                      <p>Feature-level importance and customer-level explanation support review of churn risk. Visual evidence is shown only when the corresponding saved project artifacts are available.</p>
+                    </div>
+                    <section class="signal-artifacts" data-artifact-manifest="assets/signal-stay-artifacts.json">
+                      <h4>Saved evaluation charts</h4>
+                      <p class="artifact-status" aria-live="polite">Checking saved evaluation charts…</p>
+                      <div class="artifact-chart-grid" hidden></div>
+                    </section>
+                  </div>
+                </details>
                 <div class="project-link-wrap">
                   <a href="https://github.com/Nidhijha-1001/signal-and-stay" target="_blank" rel="noopener noreferrer">View GitHub</a>
                 </div>
@@ -233,7 +266,7 @@ Learning. Experimenting. Building.</pre>
                   <span class="tag">Generative AI | Local LLMs | Intelligent Applications</span>
                   <span class="project-number">02</span>
                 </div>
-                <div class="project-visual memory-visual"><div class="memory-frame frame-one">MEMORY / 2019</div><div class="memory-frame frame-two">A PLACE TO RETURN</div><span class="memory-orbit orbit-a"></span><span class="memory-orbit orbit-b"></span><span class="memory-caption mono">LOCAL ARCHIVE · PERSONAL TIMELINE</span></div><h3>ECHOEVER — Every Memory Deserves an Eternity.</h3>
+                <div class="project-visual memory-visual"><img src="assets/echoever-landing.png" alt="ECHOEVER private digital memory archive homepage" loading="lazy" decoding="async" /><span class="project-image-label mono">PRODUCT PREVIEW / ECHOEVER</span></div><h3>ECHOEVER — Every Memory Deserves an Eternity.</h3>
                 <p>
                   A private, local-first digital memory archive for photographs, personal stories, and meaningful experiences.
                   ECHOEVER enables users to preserve and organize memories, rediscover them through search and timelines,
@@ -263,7 +296,7 @@ Learning. Experimenting. Building.</pre>
                   <span class="tag">Developer Tools | EdTech | Software Engineering</span>
                   <span class="project-number">03</span>
                 </div>
-                <div class="project-visual code-visual"><div class="block-scene"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="mono">DSA WORLD / PROBLEM 014</span></div><h3>ReCode — Minecraft-Inspired DSA Revision Platform</h3>
+                <div class="project-visual code-visual"><img src="assets/recode-dashboard.png" alt="ReCode Minecraft-inspired DSA revision dashboard" loading="lazy" decoding="async" /><span class="project-image-label mono">PRODUCT SCREEN / RECODE</span></div><h3>ReCode — Minecraft-Inspired DSA Revision Platform</h3>
                 <p>
                   A Minecraft-inspired interactive platform designed to make Data Structures and Algorithms revision more engaging and structured.
                 </p>
@@ -284,7 +317,7 @@ Learning. Experimenting. Building.</pre>
                   <span class="tag">Computer Vision | Machine Learning</span>
                   <span class="project-number">04</span>
                 </div>
-                <div class="project-visual vision-visual"><div class="scan-plane"></div><div class="scan-bracket"></div><span class="mono">IMAGE CLASSIFICATION / PIPELINE VIEW</span></div><h3>Deepfake Detection System</h3>
+                <div class="project-visual vision-visual"><div class="scan-plane"></div><div class="scan-bracket"></div><span class="mono">COMPUTER VISION / DEEPFAKE DETECTION</span></div><h3>Deepfake Detection System</h3>
                 <p>
                   A machine learning project focused on distinguishing AI-generated images from authentic images through image preprocessing,
                   experimentation, model evaluation, and classification workflows.
@@ -299,56 +332,9 @@ Learning. Experimenting. Building.</pre>
           </div>
         </section>
 
-        <section id="lab" class="interests section-shell reveal">
-          <div class="container">
-            <div class="section-heading">
-              <span class="kicker">Interactive research interface / 01</span>
-              <h2>Inside the Machine —<br>Understanding Intelligence.</h2>
-              <p class="section-intro">A visual tour of the decisions, transformations, and evaluations behind a machine learning system.</p>
-            </div>
-            <div class="lab-window">
-              <div class="lab-topline mono"><span>EXPERIMENT / CUSTOMER CHURN</span><span>VISUAL EXPLAINER · NO LIVE INFERENCE</span></div>
-              <div class="pipeline-track" aria-label="Machine learning pipeline">
-                <button class="pipeline-step active" data-detail="Raw records enter the workflow with their original fields and labels."><small>01</small><b>RAW DATA</b><span>7,043 records</span></button>
-                <button class="pipeline-step" data-detail="Missing values, types, and categorical fields are checked and transformed consistently."><small>02</small><b>PREPROCESS</b><span>clean · encode</span></button>
-                <button class="pipeline-step" data-detail="Useful customer signals are prepared for the model and kept reproducible."><small>03</small><b>FEATURES</b><span>signal design</span></button>
-                <button class="pipeline-step" data-detail="Candidate estimators are fitted on training data with a recall-oriented objective."><small>04</small><b>TRAIN</b><span>3 estimators</span></button>
-                <button class="pipeline-step" data-detail="Holdout results should be read from saved evaluation artifacts; none are present in this portfolio workspace."><small>05</small><b>EVALUATE</b><span>holdout review</span></button>
-                <button class="pipeline-step" data-detail="The application exposes risk scores to support human-led retention review."><small>06</small><b>PREDICT</b><span>risk scoring</span></button>
-              </div>
-              <p class="pipeline-detail" aria-live="polite">Raw records enter the workflow with their original fields and labels.</p>
-              <div class="lab-grid">
-                <section class="lab-module network-module">
-                  <div class="module-heading"><div><span class="mono">MODEL ANATOMY / MLP</span><h3>Signal propagation</h3></div><span class="live-tag">INTERACTIVE</span></div>
-                  <div class="network-map" role="group" aria-label="Interactive neural network showing input, hidden and output layers"><svg class="network-wires" aria-hidden="true"></svg><div class="network-layers"></div></div>
-                  <div class="layer-labels mono"><span>INPUT</span><span>HIDDEN 01</span><span>HIDDEN 02</span><span>OUTPUT</span></div>
-                  <p class="module-note">Select a neuron to trace its outgoing connections.</p>
-                </section>
-                <section class="lab-module eval-module">
-                  <div class="module-heading"><div><span class="mono">BENCHMARK / SIGNAL &amp; STAY</span><h3>Model comparison</h3></div><span class="data-state">ARTIFACTS NOT FOUND</span></div>
-                  <div class="metric-empty"><span>—</span><p>Saved holdout metrics are not available in this workspace.</p></div>
-                  <div class="model-list"><button class="model-choice selected">Logistic Regression <span>SELECTED VIEW</span></button><button class="model-choice">Random Forest <span>NO METRICS</span></button><button class="model-choice">XGBoost <span>NO METRICS</span></button></div>
-                  <small class="data-disclaimer">Recall · Precision · F1 · F2 · ROC-AUC will appear here when evaluation artifacts are supplied.</small>
-                </section>
-                <section class="lab-module matrix-module">
-                  <div class="module-heading"><div><span class="mono">CLASSIFICATION / 2 × 2</span><h3>Confusion matrix</h3></div><span class="illustrative-tag">ILLUSTRATIVE</span></div>
-                  <div class="matrix-axis"><span>Predicted →</span></div>
-                  <div class="matrix-layout"><span class="true-axis">TRUE</span><div class="matrix-grid"><button data-explain="True positive: a customer who churned and was correctly flagged."><b>TP</b><small>True positive</small></button><button data-explain="False positive: a customer flagged as at risk who did not churn."><b>FP</b><small>False positive</small></button><button data-explain="False negative: a customer who churned but was missed by the model."><b>FN</b><small>False negative</small></button><button data-explain="True negative: a customer who stayed and was correctly identified."><b>TN</b><small>True negative</small></button></div></div>
-                  <p class="matrix-detail" aria-live="polite">Hover or focus a cell to understand the outcome.</p>
-                </section>
-                <section class="lab-module charts-module">
-                  <div class="module-heading"><div><span class="mono">MODEL DIAGNOSTICS</span><h3>Evaluation views</h3></div><span class="data-state">WAITING FOR ARTIFACTS</span></div>
-                  <div class="chart-pair"><div><h4>Feature importance</h4><div class="empty-chart"><span>Permutation importance unavailable</span><i></i><i></i><i></i></div></div><div><h4>ROC curve</h4><svg class="roc-chart" viewBox="0 0 220 140" role="img" aria-label="ROC curve unavailable. Chart placeholder with diagonal baseline"><path d="M28 8V112H212"/><path class="baseline" d="M28 112L212 8"/><text x="85" y="132">FALSE POSITIVE RATE</text><text x="3" y="22">TPR</text></svg><small>No saved probability data</small></div></div>
-                </section>
-              </div>
-              <p class="lab-footnote">Illustrative interface only. No performance values or feature rankings have been fabricated.</p>
-            </div>
-          </div>
-        </section>
-
         <section class="skills section-shell reveal" id="skills">
           <div class="container">
-            <div class="section-heading"><span class="kicker">Capability graph / 02</span><h2>Tools in relationship.</h2><p class="section-intro">Select a practice area to focus the connected technologies and their practical role.</p></div>
+            <div class="section-heading"><span class="kicker">Technical Skills</span><h2>Tools behind the work.</h2><p class="section-intro">Technologies I use across software engineering, applied AI, and machine-learning projects.</p></div>
             <div class="ecosystem">
               <div class="ecosystem-categories" role="group" aria-label="Technology categories">
                 <button class="ecosystem-tab active" data-category="programming">01 / Programming</button><button class="ecosystem-tab" data-category="ml">02 / Machine Learning</button><button class="ecosystem-tab" data-category="ai">03 / AI</button><button class="ecosystem-tab" data-category="apps">04 / Application Development</button><button class="ecosystem-tab" data-category="tools">05 / Developer Tools</button>
@@ -361,8 +347,8 @@ Learning. Experimenting. Building.</pre>
         <section id="timeline" class="timeline section-shell reveal">
           <div class="container">
             <div class="section-heading">
-              <span class="kicker">Journey</span>
-              <h2>Milestones &amp; Recognition.</h2>
+              <span class="kicker">Experience &amp; Open Source</span>
+              <h2>Experience, contributions &amp; milestones.</h2>
             </div>
 
             <div class="timeline-list">
@@ -405,45 +391,61 @@ Learning. Experimenting. Building.</pre>
 
         <section id="achievements" class="achievements section-shell reveal">
           <div class="container">
-            <div class="section-heading align-center">
+            <div class="section-heading">
               <span class="kicker">Achievements</span>
               <h2>Milestones &amp; Recognition.</h2>
+              <p class="section-intro">Selected milestones in scholarship, problem-solving, community, and applied AI.</p>
             </div>
 
-            <div class="achievement-grid">
-              <article class="achievement-card achievement-banner panel">
-                <div class="achievement-content text-only">
-                  <span class="card-tag">ACHIEVEMENT 01</span>
+            <div class="recognition-grid">
+              <article class="recognition-feature scholarship-feature gallery-reveal">
+                <div class="recognition-copy">
+                  <span class="recognition-index">FEATURE 01 <i></i> SCHOLARSHIP</span>
                   <h3>GHCI 2027 AIP Scholarship</h3>
-                  <p>Selected for the Advancing Inclusion Program (AIP) Scholarship for Grace Hopper Celebration India 2027 (GHCI 27).</p>
+                  <p>Selected for the Advancing Inclusion Program Scholarship for Grace Hopper Celebration India 2027.</p>
+                  <span class="recognition-note">GRACE HOPPER CELEBRATION INDIA · 2027</span>
                 </div>
-                <button class="certificate-preview" type="button" aria-label="View GHCI 2027 scholarship artwork full screen"><img src="GHCI_Badge_N4ECZ7Y8B.png" alt="GHCI 2027 Advancing Inclusion Program Scholar badge" class="award-img" loading="lazy" decoding="async" /></button>
+                <button class="certificate-preview scholarship-frame" type="button" aria-label="View the complete GHCI 2027 AIP scholarship artwork">
+                  <img src="GHCI_Badge_N4ECZ7Y8B.png" alt="GHCI 2027 Advancing Inclusion Program Scholar certificate featuring Nidhi Jha" class="award-img" loading="lazy" decoding="async" />
+                  <span class="certificate-action" aria-hidden="true">VIEW ARTWORK <span>↗</span></span>
+                </button>
               </article>
 
-              <article class="achievement-card panel">
-                <span class="card-tag">ACHIEVEMENT 02</span>
-                <h3>300+ DSA Problems Solved</h3>
-                <p>Strong performance in problem-solving and algorithmic thinking through consistent practice.</p>
+              <article class="recognition-feature cloud-feature gallery-reveal">
+                <div class="recognition-copy">
+                  <span class="recognition-index">FEATURE 02 <i></i> GOOGLE CLOUD</span>
+                  <h3>Google Cloud Arcade Legend</h3>
+                  <p>Reached the Ultimate Milestone with 7,200+ badges in the 2025 Cohort 2.</p>
+                </div>
+                <button class="certificate-preview cloud-frame" type="button" aria-label="View the complete Google Cloud Arcade certificate">
+                  <img src="1756555476884.jpeg" alt="Google Cloud Arcade certificate for Nidhi Jha, Ultimate Milestone, 7,200+ badges, 2025 Cohort 2" class="certificate-img" loading="lazy" decoding="async" />
+                  <span class="certificate-action" aria-hidden="true">VIEW CERTIFICATE <span>↗</span></span>
+                </button>
               </article>
 
-              <article class="achievement-card panel">
-                <span class="card-tag">ACHIEVEMENT 03</span>
-                <h3>AI/ML Undergraduate</h3>
-                <p>Building a foundation in intelligent systems, predictive modeling, and applied AI technology.</p>
+              <article class="recognition-dsa gallery-reveal">
+                <span class="recognition-index">03 <i></i> PROBLEM SOLVING</span>
+                <span class="achievement-count" data-count="300" aria-hidden="true">300+</span>
+                <h3 aria-label="300 plus Data Structures and Algorithms Problems Solved">Data Structures &amp; Algorithms Problems Solved</h3>
+                <span class="dsa-rule" aria-hidden="true"></span>
+                <p>Consistent practice in problem-solving and algorithmic thinking.</p>
               </article>
 
-              <article class="achievement-card panel">
-                <span class="card-tag">ACHIEVEMENT 04</span>
-                <h3>Open Source Contributor</h3>
-                <p>Active in community-driven development and experimentation around practical engineering.</p>
+              <article class="recognition-editorial open-source-entry gallery-reveal">
+                <span class="recognition-index">04 <i></i> COMMUNITY</span>
+                <h3>Open-source exploration</h3>
+                <p>Hacktoberfest participation and exploration of community-driven projects and learner-first tools.</p>
+                <span class="editorial-footnote">OPEN SOURCE <span>·</span> HACKTOBERFEST</span>
               </article>
 
-              <article class="achievement-card certificate-card panel">
-                <span class="card-tag">ACHIEVEMENT 05</span>
-                <button class="certificate-preview" type="button" aria-label="View Google Cloud Arcade certificate full screen"><img src="1756555476884.jpeg" alt="Google Cloud Arcade Facilitator Program certificate issued to Nidhi Jha" class="certificate-img" loading="lazy" decoding="async" /></button>
-                <div class="certificate-copy">
-                  <h3>Google Cloud Arcade Facilitator Program</h3>
-                  <p>Recognized for successful participation in the Google Cloud Arcade Facilitator Program.</p>
+              <article class="recognition-editorial ai-journey-entry gallery-reveal">
+                <span class="recognition-index">05 <i></i> APPLIED AI</span>
+                <h3>Building across the stack</h3>
+                <div class="discipline-timeline" aria-label="Areas of project development">
+                  <span>Machine Learning</span>
+                  <span>Predictive Analytics</span>
+                  <span>Generative AI</span>
+                  <span>Full-Stack Development</span>
                 </div>
               </article>
             </div>
@@ -487,7 +489,16 @@ Learning. Experimenting. Building.</pre>
       </footer>
     </div>
 
-    <dialog class="image-dialog" aria-label="Certificate image preview"><button class="dialog-close" aria-label="Close image preview">×</button><img alt=""></dialog>
+    <dialog class="image-dialog" aria-label="Certificate image preview">
+      <div class="image-dialog-toolbar">
+        <span class="image-dialog-label">CERTIFICATE VIEWER</span>
+        <div>
+          <button class="image-zoom" type="button" aria-pressed="false">View at 1:1</button>
+          <button class="dialog-close" type="button" aria-label="Close image preview">×</button>
+        </div>
+      </div>
+      <div class="image-viewport"><img alt=""></div>
+    </dialog>
     <script src="script.js"></script>
   </body>
 </html>

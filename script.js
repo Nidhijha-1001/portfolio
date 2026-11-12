@@ -14,7 +14,8 @@ if (typedText) {
     else if (deleting && char <= 0) { deleting = false; word = (word + 1) % items.length; delay = 260; }
     window.setTimeout(tick, delay);
   };
-  if (items.length) tick();
+  if (items.length && !prefersReduced) tick();
+  else if (items.length) typedText.textContent = items[0];
 }
 
 const revealElements = document.querySelectorAll('.reveal');
@@ -42,84 +43,80 @@ navLinks?.querySelectorAll('a').forEach(link => link.addEventListener('click', (
   navLinks.classList.remove('open');
 }));
 
-// Pipeline descriptions and hover/focus support.
-const pipelineDetail = document.querySelector('.pipeline-detail');
-document.querySelectorAll('.pipeline-step').forEach(button => {
-  const activate = () => {
-    document.querySelectorAll('.pipeline-step').forEach(item => item.classList.toggle('active', item === button));
-    if (pipelineDetail) pipelineDetail.textContent = button.dataset.detail;
-  };
-  button.addEventListener('mouseenter', activate);
-  button.addEventListener('focus', activate);
-  button.addEventListener('click', activate);
-});
+const signalDetails = document.querySelector('.signal-details');
+const artifactSection = document.querySelector('.signal-artifacts');
+if (signalDetails && artifactSection) {
+  const artifactStatus = artifactSection.querySelector('.artifact-status');
+  const chartGrid = artifactSection.querySelector('.artifact-chart-grid');
+  let artifactLoad;
 
-// Accessible confusion-matrix explanations.
-const matrixDetail = document.querySelector('.matrix-detail');
-document.querySelectorAll('.matrix-grid button').forEach(cell => {
-  const explain = () => { if (matrixDetail) matrixDetail.textContent = cell.dataset.explain; };
-  cell.addEventListener('mouseenter', explain);
-  cell.addEventListener('focus', explain);
-  cell.addEventListener('click', explain);
-});
-
-// Model names change the selected view, while metric fields remain honestly empty.
-document.querySelectorAll('.model-choice').forEach(choice => choice.addEventListener('click', () => {
-  document.querySelectorAll('.model-choice').forEach(item => item.classList.toggle('selected', item === choice));
-}));
-
-// Small feed-forward diagram, with real SVG edges and selectable neuron activation.
-const networkMap = document.querySelector('.network-map');
-const wireSvg = document.querySelector('.network-wires');
-const layersRoot = document.querySelector('.network-layers');
-if (networkMap && wireSvg && layersRoot) {
-  const sizes = [4, 6, 5, 2];
-  const neuronNodes = [];
-  sizes.forEach((count, layer) => {
-    const column = document.createElement('div');
-    column.className = 'neuron-column';
-    for (let index = 0; index < count; index += 1) {
-      const button = document.createElement('button');
-      button.className = 'neuron'; button.type = 'button';
-      button.setAttribute('aria-label', `Activate neuron ${index + 1} in layer ${layer + 1}`);
-      button.dataset.layer = layer; button.dataset.index = index;
-      column.append(button); neuronNodes.push(button);
-    }
-    layersRoot.append(column);
+  signalDetails.addEventListener('toggle', () => {
+    if (!signalDetails.open || artifactLoad || !artifactStatus || !chartGrid) return;
+    artifactLoad = loadSignalArtifacts();
   });
-  const drawEdges = () => {
-    const rect = networkMap.getBoundingClientRect();
-    wireSvg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
-    wireSvg.replaceChildren();
-    const positions = neuronNodes.map(node => {
-      const box = node.getBoundingClientRect();
-      return { node, x: box.left - rect.left + box.width / 2, y: box.top - rect.top + box.height / 2 };
-    });
-    for (let layer = 0; layer < sizes.length - 1; layer += 1) {
-      const left = positions.filter(p => Number(p.node.dataset.layer) === layer);
-      const right = positions.filter(p => Number(p.node.dataset.layer) === layer + 1);
-      left.forEach(a => right.forEach(b => {
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', a.x); line.setAttribute('y1', a.y); line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
-        line.dataset.from = `${layer}-${a.node.dataset.index}`; line.dataset.to = `${layer + 1}-${b.node.dataset.index}`;
-        wireSvg.append(line);
+
+  async function loadSignalArtifacts() {
+    const manifestUrl = new URL(artifactSection.dataset.artifactManifest, document.baseURI);
+    if (window.location.protocol === 'file:') {
+      artifactStatus.textContent = 'Saved evaluation charts can be checked when the portfolio is served with its project artifacts.';
+      return;
+    }
+    try {
+      const response = await fetch(manifestUrl);
+      if (response.status === 404) {
+        artifactStatus.textContent = 'No saved evaluation charts are bundled with this portfolio copy.';
+        return;
+      }
+      if (!response.ok) throw new Error(`Artifact manifest request failed with ${response.status}.`);
+
+      const manifest = await response.json();
+      if (!manifest || !Array.isArray(manifest.charts)) {
+        throw new Error('Artifact manifest must contain a charts array.');
+      }
+
+      const artifactDirectory = new URL('.', manifestUrl);
+      const chartFigures = await Promise.all(manifest.charts.map(async chart => {
+        if (typeof chart?.title !== 'string' || typeof chart?.src !== 'string' || typeof chart?.alt !== 'string') return null;
+        const chartUrl = new URL(chart.src, manifestUrl);
+        if (
+          chartUrl.origin !== manifestUrl.origin ||
+          !chartUrl.pathname.startsWith(artifactDirectory.pathname) ||
+          !/\.(png|jpe?g|svg|webp)$/i.test(chartUrl.pathname)
+        ) return null;
+
+        const image = new Image();
+        image.alt = chart.alt;
+        image.decoding = 'async';
+        image.src = chartUrl.href;
+        try {
+          await image.decode();
+        } catch (error) {
+          console.error(`Unable to load saved chart "${chart.title}".`, error);
+          return null;
+        }
+
+        const figure = document.createElement('figure');
+        const caption = document.createElement('figcaption');
+        caption.textContent = chart.title;
+        figure.append(image, caption);
+        return figure;
       }));
+
+      const loadedCharts = chartFigures.filter(Boolean);
+      if (!loadedCharts.length) {
+        artifactStatus.textContent = 'No usable saved evaluation charts are available.';
+        return;
+      }
+
+      chartGrid.replaceChildren(...loadedCharts);
+      chartGrid.hidden = false;
+      artifactStatus.hidden = loadedCharts.length === manifest.charts.length;
+      if (!artifactStatus.hidden) artifactStatus.textContent = 'Some saved charts could not be loaded.';
+    } catch (error) {
+      console.error('Unable to load Signal & Stay evaluation artifacts.', error);
+      artifactStatus.textContent = 'Saved evaluation charts could not be loaded.';
     }
-  };
-  const activateNeuron = node => {
-    const layer = Number(node.dataset.layer), index = Number(node.dataset.index);
-    neuronNodes.forEach(n => n.classList.remove('active'));
-    node.classList.add('active');
-    const active = new Set([`${layer}-${index}`]);
-    for (let next = layer + 1; next < sizes.length; next += 1) {
-      for (let i = 0; i < sizes[next]; i += 1) active.add(`${next}-${i}`);
-    }
-    wireSvg.querySelectorAll('line').forEach(line => line.classList.toggle('active', active.has(line.dataset.from) && active.has(line.dataset.to)));
-    neuronNodes.forEach(n => { if (active.has(`${n.dataset.layer}-${n.dataset.index}`)) n.classList.add('active'); });
-  };
-  neuronNodes.forEach(node => node.addEventListener('click', () => activateNeuron(node)));
-  requestAnimationFrame(drawEdges);
-  window.addEventListener('resize', drawEdges);
+  }
 }
 
 const technology = {
@@ -149,116 +146,639 @@ renderTechnology('programming');
 // Official achievement artwork opens in a native, dismissible full-screen dialog.
 const imageDialog = document.querySelector('.image-dialog');
 const dialogImage = imageDialog?.querySelector('img');
+const imageZoom = imageDialog?.querySelector('.image-zoom');
+const resetImageZoom = () => {
+  imageDialog?.classList.remove('zoomed');
+  imageZoom?.setAttribute('aria-pressed', 'false');
+  if (imageZoom) imageZoom.textContent = 'View at 1:1';
+};
 document.querySelectorAll('.certificate-preview').forEach(button => button.addEventListener('click', () => {
   const source = button.querySelector('img');
   if (!source || !imageDialog || !dialogImage) return;
   dialogImage.src = source.src; dialogImage.alt = source.alt;
+  resetImageZoom();
   imageDialog.showModal();
 }));
 imageDialog?.querySelector('.dialog-close')?.addEventListener('click', () => imageDialog.close());
 imageDialog?.addEventListener('click', event => { if (event.target === imageDialog) imageDialog.close(); });
+imageDialog?.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && imageDialog.open) {
+    event.preventDefault();
+    imageDialog.close();
+  }
+});
+imageZoom?.addEventListener('click', () => {
+  const zoomed = imageDialog?.classList.toggle('zoomed') || false;
+  imageZoom.setAttribute('aria-pressed', String(zoomed));
+  imageZoom.textContent = zoomed ? 'Fit to screen' : 'View at 1:1';
+});
+imageDialog?.addEventListener('close', resetImageZoom);
 
-// Lightweight 2D fallback if Three.js/WebGL is unavailable.
+// Lightweight projected data-universe fallback when WebGL is unavailable.
 function startFallback(canvas) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  let width = 0, height = 0, frame = 0, pointer = { x: 0, y: 0 }, running = true, visible = true;
-  const count = window.innerWidth < 600 ? 56 : 100;
-  const points = Array.from({ length: count }, (_, i) => {
-    const z = Math.random() * 2 - 1, angle = Math.random() * Math.PI * 2, radius = 100 + Math.random() * 110;
-    return { x: Math.cos(angle) * radius * Math.sqrt(1 - z * z), y: Math.sin(angle) * radius * Math.sqrt(1 - z * z), z: z * radius, phase: Math.random() * 7 };
+  const context = canvas.getContext('2d');
+  if (!context) return;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const palette = ['#54dce7', '#5b8dff', '#d274ec', '#ff789f', '#ffb56f'];
+  const random = (() => {
+    let seed = 41;
+    return () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+  })();
+  const clusters = [
+    { center: [-140, 82, 5], spread: [25, 30, 42], color: palette[0], count: 72 },
+    { center: [-132, -76, -6], spread: [31, 24, 35], color: palette[1], count: 68 },
+    { center: [-75, 4, 25], spread: [27, 35, 29], color: palette[2], count: 65 },
+    { center: [-28, 99, -25], spread: [22, 24, 34], color: palette[3], count: 54 },
+    { center: [-24, -98, 20], spread: [27, 22, 35], color: palette[4], count: 52 }
+  ];
+  const points = clusters.flatMap(cluster => Array.from({ length: cluster.count }, () => {
+    const angle = random() * Math.PI * 2;
+    const radius = Math.sqrt(random());
+    const depth = (random() - .5) * 2;
+    return {
+      x: cluster.center[0] + Math.cos(angle) * radius * cluster.spread[0],
+      y: cluster.center[1] + Math.sin(angle) * radius * cluster.spread[1],
+      z: cluster.center[2] + depth * cluster.spread[2],
+      phase: random() * Math.PI * 2,
+      color: cluster.color
+    };
+  }));
+  const layerSizes = [4, 6, 6, 4];
+  const nodes = layerSizes.flatMap((count, layer) => Array.from({ length: count }, (_, index) => ({
+    x: -1 + layer * 62,
+    y: (index / Math.max(1, count - 1) - .5) * 178,
+    z: Math.sin(index * 2 + layer) * 30 + (random() - .5) * 18,
+    layer,
+    color: palette[Math.min(layer, palette.length - 1)]
+  })));
+  const layers = layerSizes.map((_, layer) => nodes.filter(node => node.layer === layer));
+  const edges = [];
+  layers.slice(0, -1).forEach((layer, index) => {
+    layer.forEach(source => layers[index + 1].forEach(target => edges.push({ source, target })));
   });
-  const resize = () => { const dpr = Math.min(devicePixelRatio || 1, 1.5); width = canvas.clientWidth; height = canvas.clientHeight; canvas.width = width * dpr; canvas.height = height * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
-  const draw = time => {
-    if (!running) return;
-    ctx.clearRect(0, 0, width, height);
-    const angle = prefersReduced ? .1 : time * .00015;
-    const projected = points.map(p => {
-      const x = p.x * Math.cos(angle) - p.z * Math.sin(angle), z = p.x * Math.sin(angle) + p.z * Math.cos(angle);
-      const scale = 310 / (310 + z);
-      return { x: width / 2 + (x + pointer.x * 15) * scale, y: height / 2 + (p.y + pointer.y * 10) * scale, scale, z };
-    });
-    projected.forEach((p, i) => {
-      for (let j = i + 1; j < projected.length; j += 1) {
-        const q = projected[j], dist = Math.hypot(p.x - q.x, p.y - q.y);
-        if (dist < 38) { ctx.strokeStyle = `rgba(115,220,226,${(1 - dist / 38) * .42})`; ctx.lineWidth = .7; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); }
-      }
-      const pulse = 1 + Math.sin(time * .002 + points[i].phase) * .25;
-      ctx.fillStyle = '#8cebf0'; ctx.shadowColor = '#59d9df'; ctx.shadowBlur = 10;
-      ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(1,p.scale * pulse * 2.2),0,Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-    });
-    if (!prefersReduced) frame = requestAnimationFrame(draw);
+  const boundaries = [
+    { x: -55, y: 58, width: 76, height: 62, color: 'rgba(77,211,228,.22)' },
+    { x: -58, y: -59, width: 72, height: 58, color: 'rgba(206,111,236,.2)' }
+  ];
+  let width = 0, height = 0, frame = 0, pointerX = 0, pointerY = 0, active = true;
+  const resize = () => {
+    const ratio = Math.min(devicePixelRatio || 1, innerWidth < 700 ? 1 : 1.3);
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
+    canvas.width = width * ratio;
+    canvas.height = height * ratio;
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
   };
-  resize(); frame = requestAnimationFrame(draw);
+  const project = (point, time) => {
+    const rotation = (reducedMotion ? 0 : time * .00008) + pointerX * .12;
+    const x = point.x * Math.cos(rotation) - point.z * Math.sin(rotation);
+    const z = point.x * Math.sin(rotation) + point.z * Math.cos(rotation);
+    const y = point.y + pointerY * -9;
+    const scale = 560 / (560 + z);
+    return { x: width * .53 + x * scale, y: height * .5 + y * scale, scale };
+  };
+  const draw = time => {
+    frame = 0;
+    if (!active) return;
+    context.clearRect(0, 0, width, height);
+    boundaries.forEach(boundary => {
+      context.beginPath();
+      for (let index = 0; index <= 36; index += 1) {
+        const x = boundary.x - boundary.width / 2 + index / 36 * boundary.width;
+        const y = boundary.y + Math.sin(index / 36 * Math.PI * 2 + time * .0003) * boundary.height * .18;
+        const point = project({ x, y, z: Math.cos(index / 36 * Math.PI * 4 + time * .0002) * 9 }, time);
+        if (!index) context.moveTo(point.x, point.y);
+        else context.lineTo(point.x, point.y);
+      }
+      context.strokeStyle = boundary.color;
+      context.lineWidth = 20;
+      context.stroke();
+    });
+    edges.forEach(({ source, target }) => {
+      const start = project(source, time);
+      const end = project(target, time);
+      context.beginPath();
+      context.moveTo(start.x, start.y);
+      context.lineTo(end.x, end.y);
+      context.strokeStyle = 'rgba(126,167,229,.18)';
+      context.lineWidth = .7;
+      context.stroke();
+    });
+    points.forEach(point => {
+      const drift = reducedMotion ? 0 : Math.sin(time * .0008 + point.phase) * 2;
+      const position = project({ ...point, x: point.x + drift, y: point.y + drift * .55 }, time);
+      context.beginPath();
+      context.arc(position.x, position.y, Math.max(1.1, 2 * position.scale), 0, Math.PI * 2);
+      context.fillStyle = point.color;
+      context.globalAlpha = .76;
+      context.fill();
+    });
+    context.globalAlpha = 1;
+    nodes.forEach((node, index) => {
+      const position = project(node, time);
+      const pulse = reducedMotion ? 0 : (Math.sin(time * .002 + index) + 1) * .5;
+      context.beginPath();
+      context.arc(position.x, position.y, 3.2 + pulse * 1.2, 0, Math.PI * 2);
+      context.fillStyle = node.color;
+      context.fill();
+    });
+    edges.slice(0, 20).forEach((edge, index) => {
+      const phase = reducedMotion ? index / 20 : (time * .00016 + index / 20) % 1;
+      const start = project(edge.source, time);
+      const end = project(edge.target, time);
+      context.beginPath();
+      context.arc(start.x + (end.x - start.x) * phase, start.y + (end.y - start.y) * phase, 2, 0, Math.PI * 2);
+      context.fillStyle = palette[index % palette.length];
+      context.fill();
+    });
+    if (!reducedMotion) frame = requestAnimationFrame(draw);
+  };
   const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
-    visible = entries.some(entry => entry.isIntersecting);
-    if (visible && !prefersReduced && !frame) frame = requestAnimationFrame(draw);
-    if (!visible && frame) { cancelAnimationFrame(frame); frame = 0; }
-  }) : null;
+    active = entries.some(entry => entry.isIntersecting);
+    if (active && !frame && !reducedMotion) frame = requestAnimationFrame(draw);
+    if (!active && frame) { cancelAnimationFrame(frame); frame = 0; }
+  }, { rootMargin: '100px' }) : null;
+  const onPointerMove = event => {
+    const rect = canvas.getBoundingClientRect();
+    pointerX = (event.clientX - rect.left) / Math.max(1, rect.width) - .5;
+    pointerY = (event.clientY - rect.top) / Math.max(1, rect.height) - .5;
+    if (reducedMotion && active) draw(0);
+  };
+  resize();
+  draw(0);
   observer?.observe(canvas);
   window.addEventListener('resize', resize);
-  canvas.parentElement.addEventListener('pointermove', e => { const rect = canvas.getBoundingClientRect(); pointer.x = (e.clientX - rect.left) / rect.width - .5; pointer.y = (e.clientY - rect.top) / rect.height - .5; });
-  return () => { running = false; cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener('resize', resize); };
+  canvas.parentElement.addEventListener('pointermove', onPointerMove);
+  return () => {
+    cancelAnimationFrame(frame);
+    observer?.disconnect();
+    window.removeEventListener('resize', resize);
+    canvas.parentElement.removeEventListener('pointermove', onPointerMove);
+  };
 }
 
-// Load Three.js only when the hero enters view; pause rendering offscreen and on hidden tabs.
-const canvas = document.getElementById('neural-canvas');
+// Load the interactive machine-learning data universe only when the hero enters view.
+const canvas = document.getElementById('portfolio-canvas');
 if (canvas && 'IntersectionObserver' in window) {
-  let started = false;
+  let started = false, disposed = false, idleHandle = 0, fallbackCleanup;
   const observer = new IntersectionObserver(entries => {
     if (!entries.some(entry => entry.isIntersecting) || started) return;
-    started = true; observer.disconnect();
-    const boot = async () => {
-      try {
-        const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
-        if (!canvas.isConnected) return;
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: window.innerWidth > 700, powerPreference: 'low-power' });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 700 ? 1.25 : 1.7));
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(43, 1, .1, 1200); camera.position.z = 540;
-        const sphere = new THREE.Group(); scene.add(sphere);
-        const nodeCount = window.innerWidth < 600 ? 120 : 245;
-        const vectors = [];
-        const golden = Math.PI * (3 - Math.sqrt(5));
-        for (let i = 0; i < nodeCount; i += 1) {
-          const y = 1 - (i / (nodeCount - 1)) * 2, radius = Math.sqrt(1 - y * y), theta = golden * i;
-          vectors.push(new THREE.Vector3(Math.cos(theta) * radius * 195, y * 195, Math.sin(theta) * radius * 195));
-        }
-        const nodeGeometry = new THREE.SphereGeometry(1.7, 7, 6);
-        const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x9df4f1 });
-        const instances = new THREE.InstancedMesh(nodeGeometry, nodeMaterial, nodeCount);
-        const matrix = new THREE.Matrix4();
-        vectors.forEach((v, i) => { matrix.makeTranslation(v.x, v.y, v.z); instances.setMatrixAt(i, matrix); });
-        instances.instanceMatrix.needsUpdate = true; sphere.add(instances);
-        const linePositions = [];
-        const edges = [];
-        for (let i = 0; i < nodeCount; i += 1) {
-          const nearest = vectors.map((v, j) => ({ j, d: vectors[i].distanceTo(v) })).filter(v => v.j !== i && v.d < 62).sort((a,b) => a.d-b.d).slice(0,4);
-          nearest.forEach(({ j }) => { if (j <= i) return; edges.push([i,j]); linePositions.push(...vectors[i].toArray(), ...vectors[j].toArray()); });
-        }
-        const lineGeo = new THREE.BufferGeometry(); lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions,3));
-        sphere.add(new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({ color:0x57cad4, transparent:true, opacity:.24 })));
-        const particlePositions = new Float32Array(24 * 3);
-        const particleGeo = new THREE.BufferGeometry(); particleGeo.setAttribute('position',new THREE.BufferAttribute(particlePositions,3));
-        const particles = new THREE.Points(particleGeo,new THREE.PointsMaterial({ color:0xe5ffff,size:4,transparent:true,opacity:.9,sizeAttenuation:true })); sphere.add(particles);
-        const flows = Array.from({ length: 24 }, (_,i) => ({ edge: edges[(i * 47) % edges.length], phase: Math.random(), speed: .0014 + Math.random() * .002 }));
-        let targetX=0,targetY=0,active=true,frameId=0,lastTime=0;
-        const resize=()=>{const box=canvas.getBoundingClientRect();renderer.setSize(box.width,box.height,false);camera.aspect=box.width/Math.max(box.height,1);camera.updateProjectionMatrix();};
-        const pointer=e=>{const r=canvas.getBoundingClientRect();targetY=((e.clientX-r.left)/r.width-.5)*.42;targetX=((e.clientY-r.top)/r.height-.5)*.34;};
-        canvas.parentElement.addEventListener('pointermove',pointer); window.addEventListener('resize',resize); resize();
-        const setActive=()=>{active=document.visibilityState==='visible'&&canvas.getBoundingClientRect().bottom>0&&canvas.getBoundingClientRect().top<innerHeight;if(active&&!frameId)frameId=requestAnimationFrame(render);if(!active&&frameId){cancelAnimationFrame(frameId);frameId=0;}};
-        const sceneObserver=new IntersectionObserver(setActive,{rootMargin:'100px'});sceneObserver.observe(canvas);
-        const visibility=()=>setActive();
-        document.addEventListener('visibilitychange',visibility);
-        const proximity=e=>{const r=canvas.getBoundingClientRect();const mx=((e.clientX-r.left)/r.width-.5)*390,my=-((e.clientY-r.top)/r.height-.5)*390;let closest=0,best=Infinity;vectors.forEach((v,i)=>{const d=(v.x-mx)**2+(v.y-my)**2;if(d<best){best=d;closest=i;}});const color=new THREE.Color(0x9df4f1);const hot=new THREE.Color(0xff8ce1);for(let i=0;i<nodeCount;i++){const d=Math.sqrt(vectors[i].distanceToSquared(vectors[closest]));const f=Math.max(0,1-d/86);instances.setColorAt(i,color.clone().lerp(hot,f));}instances.instanceColor.needsUpdate=true;};
-        canvas.parentElement.addEventListener('pointermove',proximity);
-        function render(time){frameId=0;if(!active||!canvas.isConnected)return;if(!prefersReduced&&time-lastTime>14){lastTime=time;sphere.rotation.y+=(targetY-sphere.rotation.y)*.025;sphere.rotation.x+=(targetX-sphere.rotation.x)*.025;sphere.rotation.y+=.0009;flows.forEach((flow,i)=>{flow.phase=(flow.phase+flow.speed)%1;const [a,b]=flow.edge;const point=vectors[a].clone().lerp(vectors[b],flow.phase);particlePositions[i*3]=point.x;particlePositions[i*3+1]=point.y;particlePositions[i*3+2]=point.z;});particleGeo.attributes.position.needsUpdate=true;}renderer.render(scene,camera);if(!prefersReduced)frameId=requestAnimationFrame(render);}
-        frameId=requestAnimationFrame(render);
-        const cleanup=()=>{active=false;cancelAnimationFrame(frameId);sceneObserver.disconnect();window.removeEventListener('resize',resize);document.removeEventListener('visibilitychange',visibility);canvas.parentElement.removeEventListener('pointermove',pointer);canvas.parentElement.removeEventListener('pointermove',proximity);renderer.dispose();nodeGeometry.dispose();nodeMaterial.dispose();lineGeo.dispose();particleGeo.dispose();};
-        window.addEventListener('pagehide',cleanup,{once:true});
-      } catch (error) { const fallback = canvas.cloneNode(false); canvas.replaceWith(fallback); startFallback(fallback); }
-    };
-    if ('requestIdleCallback' in window) requestIdleCallback(() => boot(), { timeout: 1200 }); else setTimeout(boot, 100);
+    started = true;
+    observer.disconnect();
+    idleHandle = 'requestIdleCallback' in window
+      ? requestIdleCallback(() => { idleHandle = 0; boot(); }, { timeout: 1200 })
+      : window.setTimeout(() => { idleHandle = 0; boot(); }, 100);
   }, { rootMargin: '100px' });
   observer.observe(canvas);
+  async function boot() {
+    try {
+      const THREE = await import('three');
+      if (disposed || !canvas.isConnected) return;
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas, alpha: true, antialias: innerWidth > 700, powerPreference: 'low-power'
+      });
+      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, innerWidth < 700 ? 1 : 1.35));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.setClearColor(0x000000, 0);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(42, 1, .1, 1200);
+      camera.position.set(0, 0, 600);
+      scene.add(new THREE.HemisphereLight(0xb6d5ff, 0x29214e, 1.55));
+      const keyLight = new THREE.DirectionalLight(0xc0e6ff, 1.25);
+      keyLight.position.set(-170, 210, 300);
+      scene.add(keyLight);
+      const cyanLight = new THREE.PointLight(0x41d8f3, 150, 500);
+      cyanLight.position.set(-100, 100, 130);
+      scene.add(cyanLight);
+      const violetLight = new THREE.PointLight(0x8b62ff, 125, 480);
+      violetLight.position.set(155, -80, 120);
+      scene.add(violetLight);
+
+      const universe = new THREE.Group();
+      scene.add(universe);
+      const palette = ['#52dce7', '#5686ff', '#bd79e8', '#ff719f', '#ffad69'];
+      const clusterSpecs = [
+        { center: [-140, 80, 0], spread: [25, 30, 42], count: 92 },
+        { center: [-132, -76, -6], spread: [31, 24, 35], count: 86 },
+        { center: [-78, 4, 25], spread: [27, 35, 29], count: 82 },
+        { center: [-30, 99, -25], spread: [22, 24, 34], count: 72 },
+        { center: [-24, -98, 20], spread: [27, 22, 35], count: 66 }
+      ];
+      const random = (() => {
+        let seed = 41;
+        return () => {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646;
+        };
+      })();
+      const clusterCounts = clusterSpecs.map(cluster => innerWidth < 700 ? Math.round(cluster.count * .7) : cluster.count);
+      const particleCount = clusterCounts.reduce((sum, count) => sum + count, 0);
+      const pointPositions = new Float32Array(particleCount * 3);
+      const pointColors = new Float32Array(particleCount * 3);
+      const pointMotion = [];
+      const clusterCenters = [];
+      let particleIndex = 0;
+      clusterSpecs.forEach((cluster, clusterIndex) => {
+        const center = new THREE.Vector3(...cluster.center);
+        clusterCenters.push(center);
+        const count = clusterCounts[clusterIndex];
+        const color = new THREE.Color(palette[clusterIndex]);
+        for (let index = 0; index < count; index += 1) {
+          const angle = random() * Math.PI * 2;
+          const radius = Math.sqrt(random());
+          const depth = (random() - .5) * 2;
+          const point = new THREE.Vector3(
+            cluster.center[0] + Math.cos(angle) * radius * cluster.spread[0],
+            cluster.center[1] + Math.sin(angle) * radius * cluster.spread[1],
+            cluster.center[2] + depth * cluster.spread[2]
+          );
+          point.toArray(pointPositions, particleIndex * 3);
+          color.toArray(pointColors, particleIndex * 3);
+          pointMotion.push({
+            phase: random() * Math.PI * 2,
+            driftX: 1 + random() * 2.2,
+            driftY: 1 + random() * 2
+          });
+          particleIndex += 1;
+        }
+      });
+      const particleGeometry = new THREE.BufferGeometry();
+      particleGeometry.setAttribute('position', new THREE.BufferAttribute(pointPositions, 3).setUsage(THREE.DynamicDrawUsage));
+      particleGeometry.setAttribute('color', new THREE.BufferAttribute(pointColors, 3));
+      const particleMaterial = new THREE.PointsMaterial({
+        size: innerWidth < 700 ? 4.1 : 4.6,
+        vertexColors: true,
+        transparent: true,
+        opacity: .88,
+        depthWrite: false,
+        sizeAttenuation: true
+      });
+      const dataParticles = new THREE.Points(particleGeometry, particleMaterial);
+      universe.add(dataParticles);
+
+      const layerSizes = [4, 6, 6, 4];
+      const layers = layerSizes.map((count, layer) => Array.from({ length: count }, (_, index) => new THREE.Vector3(
+        -3 + layer * 61,
+        (index / Math.max(1, count - 1) - .5) * 178,
+        Math.sin(index * 2 + layer) * 30 + (random() - .5) * 18
+      )));
+      const nodes = layers.flat();
+      const nodeColors = layers.flatMap((layer, layerIndex) => layer.map(() => new THREE.Color(palette[layerIndex])));
+      const nodeGeometry = new THREE.SphereGeometry(5.2, 10, 8);
+      const nodeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        roughness: .74,
+        metalness: 0,
+        emissive: 0x10213e,
+        emissiveIntensity: .36
+      });
+      const nodeInstances = new THREE.InstancedMesh(nodeGeometry, nodeMaterial, nodes.length);
+      const nodeMatrix = new THREE.Matrix4();
+      const nodeScale = new THREE.Vector3();
+      nodes.forEach((position, index) => {
+        nodeMatrix.makeTranslation(position.x, position.y, position.z);
+        nodeInstances.setMatrixAt(index, nodeMatrix);
+        nodeInstances.setColorAt(index, nodeColors[index]);
+      });
+      nodeInstances.instanceMatrix.needsUpdate = true;
+      if (nodeInstances.instanceColor) nodeInstances.instanceColor.needsUpdate = true;
+      universe.add(nodeInstances);
+
+      const edges = [];
+      for (let layer = 0; layer < layers.length - 1; layer += 1) {
+        layers[layer].forEach((source, sourceIndex) => {
+          layers[layer + 1].forEach((target, targetIndex) => {
+            edges.push({
+              source,
+              target,
+              sourceIndex: nodes.indexOf(source),
+              targetIndex: nodes.indexOf(target),
+              paletteIndex: (sourceIndex + targetIndex + layer) % palette.length
+            });
+          });
+        });
+      }
+      layers[0].forEach((node, nodeIndex) => {
+        clusterCenters.forEach((center, clusterIndex) => {
+          if (nodeIndex % 2 === clusterIndex % 2) {
+            edges.push({
+              source: center,
+              target: node,
+              sourceIndex: -1,
+              targetIndex: nodeIndex,
+              paletteIndex: clusterIndex
+            });
+          }
+        });
+      });
+      const connectionPositions = new Float32Array(edges.length * 6);
+      const connectionColors = new Float32Array(edges.length * 6);
+      const baseConnectionColors = [];
+      edges.forEach((edge, index) => {
+        edge.source.toArray(connectionPositions, index * 6);
+        edge.target.toArray(connectionPositions, index * 6 + 3);
+        const color = new THREE.Color('#5574ab').lerp(new THREE.Color(palette[edge.paletteIndex]), .28);
+        baseConnectionColors.push(color);
+        color.toArray(connectionColors, index * 6);
+        color.toArray(connectionColors, index * 6 + 3);
+      });
+      const connectionGeometry = new THREE.BufferGeometry();
+      connectionGeometry.setAttribute('position', new THREE.BufferAttribute(connectionPositions, 3));
+      connectionGeometry.setAttribute('color', new THREE.BufferAttribute(connectionColors, 3).setUsage(THREE.DynamicDrawUsage));
+      const connectionMaterial = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: .48,
+        depthWrite: false
+      });
+      universe.add(new THREE.LineSegments(connectionGeometry, connectionMaterial));
+
+      const flowCount = innerWidth < 700 ? 18 : 28;
+      const flows = Array.from({ length: flowCount }, (_, index) => ({
+        edgeIndex: (index * 17) % edges.length,
+        phase: index / flowCount,
+        speed: .075 + random() * .035
+      }));
+      const flowPositions = new Float32Array(flowCount * 3);
+      const flowColors = new Float32Array(flowCount * 3);
+      flows.forEach((flow, index) => {
+        new THREE.Color(palette[edges[flow.edgeIndex].paletteIndex]).toArray(flowColors, index * 3);
+      });
+      const flowGeometry = new THREE.BufferGeometry();
+      flowGeometry.setAttribute('position', new THREE.BufferAttribute(flowPositions, 3).setUsage(THREE.DynamicDrawUsage));
+      flowGeometry.setAttribute('color', new THREE.BufferAttribute(flowColors, 3));
+      const flowMaterial = new THREE.PointsMaterial({
+        size: 5.2,
+        vertexColors: true,
+        transparent: true,
+        opacity: .98,
+        depthWrite: false,
+        sizeAttenuation: true
+      });
+      universe.add(new THREE.Points(flowGeometry, flowMaterial));
+
+      const surfaces = [
+        { x: -83, y: 58, width: 84, height: 74, colors: ['#39d8e6', '#6586f3'] },
+        { x: -82, y: -59, width: 80, height: 68, colors: ['#9477ea', '#f06eae'] }
+      ].map(spec => {
+        const geometry = new THREE.PlaneGeometry(spec.width, spec.height, 18, 18);
+        const positions = geometry.attributes.position;
+        const originalPositions = positions.array.slice();
+        const colors = [];
+        const firstColor = new THREE.Color(spec.colors[0]);
+        const secondColor = new THREE.Color(spec.colors[1]);
+        for (let index = 0; index < positions.count; index += 1) {
+          const mix = (positions.getY(index) / spec.height) + .5;
+          firstColor.clone().lerp(secondColor, mix).toArray(colors, index * 3);
+        }
+        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        const material = new THREE.MeshBasicMaterial({
+          vertexColors: true,
+          transparent: true,
+          opacity: .19,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(spec.x, spec.y, 0);
+        universe.add(mesh);
+        return { geometry, originalPositions, positions, phase: random() * Math.PI * 2 };
+      });
+
+      let active = true, frameId = 0, lastTime = 0, sceneDisposed = false;
+      const pointerTarget = new THREE.Vector2();
+      const pointerCurrent = new THREE.Vector2();
+      const resize = () => {
+        const { width, height } = canvas.getBoundingClientRect();
+        if (!width || !height) return;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        const fovRadians = THREE.MathUtils.degToRad(camera.fov);
+        camera.position.z = Math.max(535, 410 / (2 * Math.tan(fovRadians / 2) * camera.aspect));
+        camera.updateProjectionMatrix();
+      };
+      const pointer = event => {
+        const rect = canvas.getBoundingClientRect();
+        pointerTarget.set(
+          ((event.clientX - rect.left) / rect.width - .5) * 2,
+          ((event.clientY - rect.top) / rect.height - .5) * 2
+        );
+      };
+      const setActive = () => {
+        const rect = canvas.getBoundingClientRect();
+        active = !disposed && document.visibilityState === 'visible' &&
+          rect.bottom > -100 && rect.top < innerHeight + 100;
+        if (active && !frameId) frameId = requestAnimationFrame(render);
+        if (!active && frameId) {
+          cancelAnimationFrame(frameId);
+          frameId = 0;
+        }
+      };
+      const sceneObserver = new IntersectionObserver(setActive, { rootMargin: '100px' });
+      sceneObserver.observe(canvas);
+      const resizeObserver = new ResizeObserver(resize);
+      resizeObserver.observe(canvas);
+      canvas.parentElement.addEventListener('pointermove', pointer);
+      window.addEventListener('resize', resize);
+      document.addEventListener('visibilitychange', setActive);
+      resize();
+
+      function render(time) {
+        frameId = 0;
+        if (!active || disposed || !canvas.isConnected) return;
+        if (time - lastTime < 30 && !prefersReduced) {
+          frameId = requestAnimationFrame(render);
+          return;
+        }
+        lastTime = time;
+        const t = prefersReduced ? 0 : time * .001;
+        if (!prefersReduced) {
+          pointerCurrent.lerp(pointerTarget, .035);
+          universe.rotation.y += (pointerCurrent.x * .13 + Math.sin(t * .16) * .035 - universe.rotation.y) * .035;
+          universe.rotation.x += (pointerCurrent.y * .09 + Math.sin(t * .12) * .025 - universe.rotation.x) * .035;
+
+          const positionAttribute = particleGeometry.attributes.position;
+          pointMotion.forEach((motion, index) => {
+            const offset = index * 3;
+            positionAttribute.array[offset] = pointPositions[offset] + Math.sin(t * .55 + motion.phase) * motion.driftX;
+            positionAttribute.array[offset + 1] = pointPositions[offset + 1] + Math.cos(t * .46 + motion.phase) * motion.driftY;
+            positionAttribute.array[offset + 2] = pointPositions[offset + 2] + Math.sin(t * .38 + motion.phase) * 2;
+          });
+          positionAttribute.needsUpdate = true;
+
+          const nodeTime = t * 1.7;
+          nodes.forEach((position, index) => {
+            const pulse = .96 + (Math.sin(nodeTime + index * .83) + 1) * .07;
+            nodeScale.setScalar(pulse);
+            nodeMatrix.compose(position, new THREE.Quaternion(), nodeScale);
+            nodeInstances.setMatrixAt(index, nodeMatrix);
+          });
+          nodeInstances.instanceMatrix.needsUpdate = true;
+
+          flows.forEach((flow, index) => {
+            const phase = (flow.phase + t * flow.speed) % 1;
+            const edge = edges[flow.edgeIndex];
+            const pulse = Math.max(0, 1 - Math.abs(phase - .52) * 3.2);
+            const position = edge.source.clone().lerp(edge.target, phase);
+            position.toArray(flowPositions, index * 3);
+            const color = new THREE.Color(palette[edge.paletteIndex]).multiplyScalar(.72 + pulse * .55);
+            color.toArray(flowColors, index * 3);
+
+            const colorAttribute = connectionGeometry.attributes.color;
+            const lineColor = baseConnectionColors[flow.edgeIndex].clone().lerp(color, pulse * .9);
+            lineColor.toArray(colorAttribute.array, flow.edgeIndex * 6);
+            lineColor.toArray(colorAttribute.array, flow.edgeIndex * 6 + 3);
+          });
+          flowGeometry.attributes.position.needsUpdate = true;
+          flowGeometry.attributes.color.needsUpdate = true;
+          connectionGeometry.attributes.color.needsUpdate = true;
+
+          surfaces.forEach(surface => {
+            const array = surface.positions.array;
+            const original = surface.originalPositions;
+            for (let index = 0; index < surface.positions.count; index += 1) {
+              const x = original[index * 3];
+              const y = original[index * 3 + 1];
+              array[index * 3 + 2] = original[index * 3 + 2] +
+                Math.sin(x * .045 + t * .65 + surface.phase) * 5 +
+                Math.cos(y * .035 + t * .5 + surface.phase) * 4;
+            }
+            surface.positions.needsUpdate = true;
+            surface.geometry.computeVertexNormals();
+          });
+          cyanLight.position.x = -100 + Math.sin(t * .28) * 25;
+          violetLight.position.y = -80 + Math.cos(t * .22) * 30;
+        }
+        renderer.render(scene, camera);
+        if (!prefersReduced) frameId = requestAnimationFrame(render);
+      }
+      frameId = requestAnimationFrame(render);
+
+      const cleanup = () => {
+        if (sceneDisposed) return;
+        sceneDisposed = true;
+        disposed = true;
+        active = false;
+        cancelAnimationFrame(frameId);
+        sceneObserver.disconnect();
+        resizeObserver.disconnect();
+        window.removeEventListener('resize', resize);
+        document.removeEventListener('visibilitychange', setActive);
+        canvas.parentElement.removeEventListener('pointermove', pointer);
+        scene.traverse(object => {
+          object.geometry?.dispose();
+          if (Array.isArray(object.material)) object.material.forEach(material => material.dispose());
+          else object.material?.dispose();
+        });
+        renderer.dispose();
+        renderer.forceContextLoss();
+      };
+      window.addEventListener('pagehide', cleanup, { once: true });
+    } catch (error) {
+      console.error('Unable to initialize the 3D machine-learning visual.', error);
+      if (!disposed && canvas.isConnected) {
+        const fallback = canvas.cloneNode(false);
+        canvas.replaceWith(fallback);
+        fallbackCleanup = startFallback(fallback);
+      }
+    }
+  }
+  window.addEventListener('pagehide', () => {
+    disposed = true;
+    observer.disconnect();
+    if (idleHandle) {
+      if ('cancelIdleCallback' in window) cancelIdleCallback(idleHandle);
+      else clearTimeout(idleHandle);
+    }
+    fallbackCleanup?.();
+  }, { once: true });
 } else if (canvas) startFallback(canvas);
+
+const achievementCount = document.querySelector('.achievement-count');
+if (achievementCount) {
+  const target = Number(achievementCount.dataset.count);
+  let counted = false;
+  const showCount = () => {
+    if (counted) return;
+    counted = true;
+    if (prefersReduced) return;
+    const startedAt = performance.now();
+    const duration = 1100;
+    const animateCount = now => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = 1 - (1 - progress) ** 4;
+      achievementCount.textContent = `${Math.round(target * eased)}${progress === 1 ? '+' : ''}`;
+      if (progress < 1) requestAnimationFrame(animateCount);
+    };
+    requestAnimationFrame(animateCount);
+  };
+  if ('IntersectionObserver' in window) {
+    const countObserver = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        showCount();
+        countObserver.disconnect();
+      }
+    }, { threshold: .35 });
+    countObserver.observe(achievementCount);
+  } else showCount();
+}
+
+if ('IntersectionObserver' in window) {
+  const galleryObserver = new IntersectionObserver(entries => entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      galleryObserver.unobserve(entry.target);
+    }
+  }), { threshold: .12 });
+  document.querySelectorAll('.gallery-reveal').forEach(element => galleryObserver.observe(element));
+} else document.querySelectorAll('.gallery-reveal').forEach(element => element.classList.add('visible'));
+
+const interactiveMotion = window.matchMedia('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)').matches;
+if (interactiveMotion) {
+  document.querySelectorAll('.certificate-preview').forEach(frame => {
+    frame.addEventListener('pointermove', event => {
+      const bounds = frame.getBoundingClientRect();
+      const x = (event.clientX - bounds.left) / bounds.width - .5;
+      const y = (event.clientY - bounds.top) / bounds.height - .5;
+      frame.style.setProperty('--certificate-rotate-y', `${x * 3.2}deg`);
+      frame.style.setProperty('--certificate-rotate-x', `${-y * 2.4}deg`);
+    });
+    frame.addEventListener('pointerleave', () => {
+      frame.style.removeProperty('--certificate-rotate-x');
+      frame.style.removeProperty('--certificate-rotate-y');
+    });
+  });
+
+  document.querySelectorAll('.project-card').forEach(card => {
+    card.addEventListener('pointermove', event => {
+      const bounds = card.getBoundingClientRect();
+      const x = (event.clientX - bounds.left) / bounds.width - .5;
+      const y = (event.clientY - bounds.top) / bounds.height - .5;
+      card.style.setProperty('--card-rotate-y', `${x * 2.4}deg`);
+      card.style.setProperty('--card-rotate-x', `${-y * 1.8}deg`);
+    });
+    card.addEventListener('pointerleave', () => {
+      card.style.removeProperty('--card-rotate-x');
+      card.style.removeProperty('--card-rotate-y');
+    });
+  });
+
+  document.querySelectorAll('.hero-actions a').forEach(button => {
+    button.addEventListener('pointermove', event => {
+      const bounds = button.getBoundingClientRect();
+      const x = event.clientX - bounds.left - bounds.width / 2;
+      const y = event.clientY - bounds.top - bounds.height / 2;
+      button.style.setProperty('--magnetic-x', `${x * .08}px`);
+      button.style.setProperty('--magnetic-y', `${y * .08}px`);
+    });
+    button.addEventListener('pointerleave', () => {
+      button.style.removeProperty('--magnetic-x');
+      button.style.removeProperty('--magnetic-y');
+    });
+  });
+}
